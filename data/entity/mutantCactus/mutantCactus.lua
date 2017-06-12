@@ -1,7 +1,7 @@
 local mutantCactus = {}
 
 function mutantCactus:load(param)
-	self.type = "mutantCactus"
+	self.type = "CACTUS"
 	self.obsolete = false
 	self.width = math.floor(drawSize * 0.8)
 	self.height = drawSize
@@ -17,13 +17,7 @@ function mutantCactus:load(param)
 
 	self.jumpDistance = config.display.width * 0.15
 
-	self.img = love.graphics.newImage("data/entity/mutantCactus/mutantCactus.png")
-	self.quad = {
-		love.graphics.newQuad(0, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize * 2, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize * 3, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight())
-	}
+	self.quad = love.graphics.newQuad(0, 17, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
 
 	--Animation
 	self.animFrame = 1
@@ -31,10 +25,12 @@ function mutantCactus:load(param)
 	self.animTick = 0
 end
 
-function mutantCactus:jump()
+function mutantCactus:jump(height)
+	height = height or self.jumpHeight
 	if self.grounded then
-		self.yVel = -self.jumpHeight
+		self.yVel = -height
 		self.grounded = false
+		sound:play("whoosh")
 	end
 end
 
@@ -44,6 +40,7 @@ function mutantCactus:update(dt)
 		self.obsolete = true
 	end
 
+	--[[
 	if self.grounded then
 		self.animTick = self.animTick + dt
 		if self.animTick > (1 / self.animFPS) then
@@ -56,21 +53,35 @@ function mutantCactus:update(dt)
 	else
 		self.animFrame = 1
 	end
+	]]
 
 	--Hopping over player
-	if fmath.distance(self.x, 0, game.player.x, 0) < self.jumpDistance then
-		self:jump()
+	if self.x > game.player.x then
+		if fmath.distance(self.x, 0, game.player.x, 0) < self.jumpDistance then
+			self:jump()
+		end
 	end
 end
 
 function mutantCactus:draw()
 	love.graphics.setColor(255, 255, 255, 255)
-	love.graphics.draw(self.img, self.quad[self.animFrame], math.floor(self.x - (drawSize * 0.1)) , math.floor(self.y), 0, drawSize / assetSize, drawSize / assetSize)
+	love.graphics.draw(atlas, self.quad, math.floor(self.x - (drawSize * 0.1)) , math.floor(self.y), 0, drawSize / assetSize, drawSize / assetSize)
 end
 
 function mutantCactus:col(c)
 	if c.other.type == "PLAYER" then
-		game:lose()
+		if game.lives < 1 then
+			game:lose()
+		else
+			game.lives = game.lives - 1
+			game.livesText:setText(game.lives)
+			game.player.grounded = true
+			game.player:jump(game.player.jumpHeight * 0.5, true)
+			game.player:flash()
+			game:shake()
+			sound:play("hit")
+			self.obsolete = true
+		end
 	end
 end
 

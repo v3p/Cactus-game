@@ -15,13 +15,15 @@ function player:load(param)
 	self.xVel = 0
 	self.yVel = 0
 
+	self.distanceToGround = 0
+
 	--Image
-	self.img = love.graphics.newImage("data/entity/player/player.png")
+	--self.img = love.graphics.newImage("data/entity/player/player.png")
 	self.quad = {
-		love.graphics.newQuad(0, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize * 2, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight()),
-		love.graphics.newQuad(assetSize * 3, 0, assetSize, assetSize, self.img:getWidth(), self.img:getHeight())
+		love.graphics.newQuad(0, 0, assetSize, assetSize, atlas:getWidth(), atlas:getHeight()),
+		love.graphics.newQuad(17, 0, assetSize, assetSize, atlas:getWidth(), atlas:getHeight()),
+		love.graphics.newQuad(34 , 0, assetSize, assetSize, atlas:getWidth(), atlas:getHeight()),
+		love.graphics.newQuad(51, 0, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
 	}
 
 	--Animation
@@ -35,6 +37,13 @@ function player:load(param)
 	self.moving = false
 
 	self.colItem = "none"
+
+	self.flashAlpha = 0
+	self.flashSpeed = 4
+end
+
+function player:flash()
+	self.flashAlpha = 126
 end
 
 function player:run()
@@ -45,10 +54,14 @@ function player:stop()
 	self.moving = false
 end
 
-function player:jump()
+function player:jump(height, silent)
+	height = height or self.jumpHeight
+	silent = silent or false
 	if self.grounded then
-		self.yVel = -self.jumpHeight
+		self.yVel = -height
 		self.grounded = false
+		if not silent then sound:play("whoosh") end
+		sound:stop("run")
 	end
 end
 
@@ -73,6 +86,16 @@ function player:update(dt)
 			self.animTick = 1 / self.animFPS
 		end
 	end
+
+	if self.grounded then
+		sound:play("run")
+	end
+
+	self.distanceToGround = math.abs( (self.y + self.height) - game.ground.y)
+
+	--self.y = self.y + math.floor(self._y - self.y) * (self.smoothFactor * dt)
+	self.flashAlpha = self.flashAlpha + math.floor(0 - self.flashAlpha) * (self.flashSpeed * dt)
+
 end
 
 function player:draw()
@@ -81,17 +104,36 @@ function player:draw()
 	if not self.grounded then
 		yOffset = 0--drawSize * 0.2
 	end
-	love.graphics.draw(self.img, self.quad[self.animFrame], self.x - (drawSize * 0.3), self.y + yOffset, 0, drawSize / assetSize, drawSize / assetSize)
+	love.graphics.draw(atlas, self.quad[self.animFrame], self.x - (drawSize * 0.3), self.y + yOffset, 0, drawSize / assetSize, drawSize / assetSize)
 	
+	if self.flashAlpha > 0 then
+		love.graphics.setColor(255, 0, 0, self.flashAlpha)
+		love.graphics.draw(atlas, self.quad[self.animFrame], self.x - (drawSize * 0.3), self.y + yOffset, 0, drawSize / assetSize, drawSize / assetSize)
+	end
 	--[[
-	love.graphics.setFont(font.small)
-	love.graphics.print(self.akdsfjgh, self.x, self.y - 16)
+	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.setFont(font.tiny)
+	love.graphics.print(self.distanceToGround, self.x, self.y - 24)
 	]]
+	
 end
 
 function player:col(c)
-	if c.other.type == "CACTUS" then
-		game:lose()
+	if c.other.type == "cactus" then
+		if game.lives < 1 then
+			game:lose()
+		else
+			game.lives = game.lives - 1
+			game.livesText:setText(game.lives)
+			game.player.grounded = true
+			game.player:jump(game.player.jumpHeight * 0.5, true)
+			game.player:flash()
+			game:shake()
+			sound:play("hit")
+			c.other.obsolete = true
+		end
+	elseif c.other.type == "goodCactus" then
+		c.other:colResponse(c)
 	end
 end
 

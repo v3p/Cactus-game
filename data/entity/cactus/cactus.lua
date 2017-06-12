@@ -1,7 +1,7 @@
 local cactus = {}
 
 function cactus:load(param)
-	self.type = "CACTUS"
+	self.type = "cactus"
 	self.obsolete = false
 	self.width = math.floor(drawSize * 0.78)
 	self.height = drawSize * 0.9
@@ -13,7 +13,7 @@ function cactus:load(param)
 	self.gameSpeed = param.gameSpeed
 	self.gravity = true
 
-	self.img = love.graphics.newImage("data/entity/cactus/cactus.png")
+	self.quad = love.graphics.newQuad(0, 34, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
 end
 
 function cactus:update(dt)
@@ -26,12 +26,23 @@ end
 
 function cactus:draw()
 	love.graphics.setColor(255, 255, 255, 255)
-	love.graphics.draw(self.img, math.floor(self.x - (drawSize * 0.1) ), math.floor(self.y - (drawSize * 0.12)), 0, drawSize / assetSize, drawSize / assetSize)
+	love.graphics.draw(atlas, self.quad, math.floor(self.x - (drawSize * 0.1) ), math.floor(self.y - (drawSize * 0.12)), 0, drawSize / assetSize, drawSize / assetSize)
 end
 
 function cactus:col(c)
 	if c.other.type == "PLAYER" then
-		game:lose()
+		if game.lives < 1 then
+			game:lose()
+		else
+			game.lives = game.lives - 1
+			game.livesText:setText(game.lives)
+			game.player.grounded = true
+			game.player:jump(game.player.jumpHeight * 0.5, true)
+			game.player:flash()
+			game:shake()
+			sound:play("hit")
+			self.obsolete = true
+		end
 	end
 end
 

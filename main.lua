@@ -12,6 +12,7 @@ function love.load()
 	if os == "Android" or os == "iOS"then
 		platform = "mobile"
 	end
+	--platform = "mobile"
 
 	useShader = false
 
@@ -23,6 +24,9 @@ function love.load()
 	bump = require "data.class.bump"
 	physics = require "data.class.physics"
 	text = require "data.class.text"
+	popup = require "data.class.popup"
+	sound = require "data.class.sound"
+	shine = require "data.class.shine"
 
 	--loading States
 	game = require "data.state.game"
@@ -64,13 +68,38 @@ function love.load()
 	assetSize = 16
 	drawSize = math.floor(config.display.height * 0.1)
 	vignette = love.graphics.newImage("data/art/img/vignette.png")
-	title = love.graphics.newImage("data/art/img/title.png")
+	--title = love.graphics.newImage("data/art/img/title.png")
 	loadFont()
+	atlas = love.graphics.newImage("data/art/img/image.png")
+
+	--UI Images
+	titleWidth = 100
+	titleHeight = 32
+	title = love.graphics.newQuad(0, 68, titleWidth, titleHeight, atlas:getWidth(), atlas:getHeight())
+	heart = love.graphics.newQuad(0, 51, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
+	distance = love.graphics.newQuad(17, 51, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
+
+	--Sound fx
+	sound:new("data/art/snd/whoosh.ogg", "whoosh")
+	sound:new("data/art/snd/hit.ogg", "hit")
+	sound:new("data/art/snd/ui1.ogg", "ui1")
+	sound:new("data/art/snd/ui2.ogg", "ui2")
+	sound:new("data/art/snd/run.ogg", "run")
+	sound:new("data/art/snd/health.ogg", "life")
+	sound:new("data/art/snd/music/game.ogg", "music")
+
+	sound:setVolume("ui1", 0.4)
+	sound:setVolume("ui2", 0.4)
+	sound:setVolume("music", 0.3)
+
+	sound:setLoop("run", true)
+	sound:setLoop("music", true)
 
 	--Defining Entities
 	entity:new(require("data.entity.player.player"), "player")
 	entity:new(require("data.entity.cactus.cactus"), "cactus")
 	entity:new(require("data.entity.mutantCactus.mutantCactus"), "mutantCactus")
+	entity:new(require("data.entity.goodCactus.goodCactus"), "goodCactus")
 
 	game:load()
 
@@ -81,6 +110,7 @@ function loadFont()
 	--love.graphics.setLineWidth(math.floor(config.display.width * 0.004))
 	love.graphics.setLineWidth(1)
 	font = {
+		tiny = love.graphics.newFont("data/art/font/pixelmix.ttf", math.floor(config.display.width * 0.019)),
 		small = love.graphics.newFont("data/art/font/pixelmix.ttf", math.floor(config.display.width * 0.03)),
 		large = love.graphics.newFont("data/art/font/pixelmix.ttf", math.floor(config.display.width * 0.04))
 	}
@@ -102,6 +132,10 @@ function love.resize(w, h)
 	game:resize()
 end
 
+function love.quit()
+	ini.save("config.ini", config)
+end
+
 function love.keypressed(key)
 	if key == "escape" then love.event.push("quit") end
 	game:keypressed(key)
@@ -119,6 +153,10 @@ end
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
 	game:touchpressed(id, x, y, dx, dy, pressure)
+end
+
+function love.touchreleased(id, x, y, dx, dy, pressure)
+	game:touchreleased(id, x, y, dx, dy, pressure)
 end
 
 function verticalGradient(width, height, ...)
