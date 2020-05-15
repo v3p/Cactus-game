@@ -8,9 +8,9 @@ function text.new(text, x, y, color, font, align, interactive, onClick, tag)
 	interactive = interactive or false
 	onClick = onClick or false
 	tag = tag or ""
-	local oy = config.display.height * 1.5
+	local oy = config.display.height * 1.8
 	if y < config.display.height * 0.5 then
-		oy = -(config.display.height * 0.5)
+		oy = -(config.display.height * 1.8)
 	end
 	t = {
 		text = text,
@@ -60,6 +60,8 @@ function text:update(dt)
 		local h = _h * #wrap
 		if self.align == "center" then
 			x = (config.display.width / 2) - (w / 2)
+		elseif self.align == "right" then
+			x = config.display.width - (math.abs(self.x) + self.font:getWidth(self.text))
 		end
 
 		
@@ -88,18 +90,18 @@ function text:draw()
 		--[[
 		if platform == "pc" then
 			if not self.mouse then
-				love.graphics.setColor(0, 0, 0, 64)
+				setColor(0, 0, 0, 64)
 				love.graphics.printf(self.text, math.floor(self.x), math.floor(self.y) + math.floor(config.display.height * 0.01), config.display.width, self.align)
 			end
 		else]]
-			--love.graphics.setColor(0, 0, 0, 64)
+			--setColor(0, 0, 0, 64)
 			--love.graphics.printf(self.text, math.floor(self.x), math.floor(self.y + (self.font:getAscent() - self.font:getDescent()) * 0.1), config.display.width, self.align)
 		--end
 
 		--Text
-		love.graphics.setColor(self.color)
+		setColor(self.color)
 		if self.mouse then
-			love.graphics.setColor(self.hoverColor)
+			setColor(self.hoverColor)
 		end
 		love.graphics.printf(self.text, math.floor(self.x), math.floor(self.y), config.display.width, self.align)
 		--if self.align == "center" then

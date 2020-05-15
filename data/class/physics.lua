@@ -1,8 +1,8 @@
 local physics = {}
 
 function physics:load()
-	self.gravity = math.floor(config.display.height * 6)
-	self.maxVel = math.floor(config.display.height)
+	self.gravity = math.floor(config.display.height * 8)
+	self.maxVel = math.floor(config.display.height * 5)
 	self.world = bump.newWorld(64)
 end
 
@@ -49,5 +49,25 @@ function physics:update(dt)
 		end
 	end
 end
+
+function physics:changeItem(v, x, y, w, h)
+	if self.world:hasItem(v) then
+		self.world:update(v, x, y ,w , h)
+	end
+end
+
+function physics:draw()
+	local items, len = self.world:getItems()
+	lg.setColor(1, 0, 0, 1)
+	for i,v in ipairs(items) do
+		local x, y, w, h = self.world:getRect(v)
+		lg.rectangle("line", x, y, w, h)
+	end
+end
+
+
+
+
+
 
 return physics

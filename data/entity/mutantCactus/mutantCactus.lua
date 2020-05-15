@@ -1,12 +1,12 @@
 local mutantCactus = {}
 
 function mutantCactus:load(param)
-	self.type = "CACTUS"
+	self.type = "cactus"
 	self.obsolete = false
 	self.width = math.floor(drawSize * 0.8)
 	self.height = drawSize
-	self.jumpHeight = drawSize * 16
-	self.x = config.display.width
+	self.jumpHeight = drawSize * 18
+	self.x = config.display.width * 1.5
 	self.y = param.ground - self.height
 	self.yVel = 0
 	self.xVel = -param.obstacleSpeed
@@ -15,14 +15,17 @@ function mutantCactus:load(param)
 	self.gravity = true
 	self.grounded = true
 
-	self.jumpDistance = config.display.width * 0.15
+	self.jumpDistance = config.display.width * 0.16
 
-	self.quad = love.graphics.newQuad(0, 17, assetSize, assetSize, atlas:getWidth(), atlas:getHeight())
+	self.quad = {
+		entity.quad[2],
+		entity.quad[3]
+	}
 
-	--Animation
-	self.animFrame = 1
-	self.animFPS = 12
-	self.animTick = 0
+	self.animation = animation.new(entity.atlas, {entity.quad[2], entity.quad[3]}, 3)
+
+	light:new(self.x, self.y, self.height * 5, {0, 0.5, 0}, self)
+	light:new(self.x, self.y, self.height * 0.6, {1, 0, 0}, self, self.width / 2, self.height * 0.2)
 end
 
 function mutantCactus:jump(height)
@@ -30,56 +33,52 @@ function mutantCactus:jump(height)
 	if self.grounded then
 		self.yVel = -height
 		self.grounded = false
-		sound:play("whoosh")
+		local snd = "jump"
+		if state:getState().trip then
+			snd = "jumpTrip"
+		end
+		sound:play(snd)
 	end
 end
 
 function mutantCactus:update(dt)
 	self.xVel = self.speed * self.gameSpeed
-	if self.x < -self.width then
+	if self.x < -(config.display.width / 2) then
 		self.obsolete = true
 	end
 
-	--[[
+
 	if self.grounded then
-		self.animTick = self.animTick + dt
-		if self.animTick > (1 / self.animFPS) then
-			self.animFrame = self.animFrame + 1
-			if self.animFrame > 4 then
-				self.animFrame = 1
-			end
-			self.animTick = 0
-		end
-	else
-		self.animFrame = 1
+		self.animation:update(dt)
 	end
-	]]
 
 	--Hopping over player
-	if self.x > game.player.x then
-		if fmath.distance(self.x, 0, game.player.x, 0) < self.jumpDistance then
-			self:jump()
+	if not state:getState().ended then
+		if self.x > state:getState().player.x then
+			if fmath.distance(self.x, 0, state:getState().player.x, 0) < self.jumpDistance then
+				self:jump()
+			end
 		end
 	end
 end
 
 function mutantCactus:draw()
 	love.graphics.setColor(255, 255, 255, 255)
-	love.graphics.draw(atlas, self.quad, math.floor(self.x - (drawSize * 0.1)) , math.floor(self.y), 0, drawSize / assetSize, drawSize / assetSize)
+	--love.graphics.draw(entity.atlas, self.quad[self.animFrame], math.floor(self.x - (drawSize * 0.1)) , math.floor(self.y), 0, drawSize / assetSize, drawSize / assetSize)
+	self.animation:draw(math.floor(self.x - (drawSize * 0.1)) , math.floor(self.y), drawSize / assetSize, drawSize / assetSize)
+end
+
+function mutantCactus:colResponse()
+	screenEffect:ripple(self.x + (self.width / 2), self.y + (self.height / 2), 5, drawSize, convertColor(228, 61, 61, 255))
 end
 
 function mutantCactus:col(c)
 	if c.other.type == "PLAYER" then
-		if game.lives < 1 then
-			game:lose()
+		if state:getState().lives < 1 then
+			state:getState():lose()
 		else
-			game.lives = game.lives - 1
-			game.livesText:setText(game.lives)
-			game.player.grounded = true
-			game.player:jump(game.player.jumpHeight * 0.5, true)
-			game.player:flash()
-			game:shake()
-			sound:play("hit")
+			c.other:colResponse()
+			screenEffect:ripple(self.x + (self.width / 2), self.y + (self.height / 2), 5, drawSize, convertColor(228, 61, 61, 255))
 			self.obsolete = true
 		end
 	end

@@ -16,6 +16,34 @@ local function copy(original)
 end
 
 --==[ FRONT END ]==--
+
+function entity:load()
+	self.atlas, self.quad = loadAtlas("data/art/img/entity.png", assetSize, assetSize)
+end
+
+function entity:loadEntities(path)
+	if not love.filesystem.getInfo(path) then
+		error("'"..path.."' does not exist")
+	else
+		for i, folder in ipairs(fs.getDirectoryItems(path)) do
+			for j, file in ipairs(fs.getDirectoryItems(path.."/"..folder)) do
+				if getFileType(file) == ".lua" then
+					local name = string.gsub(file, ".lua", "")
+					self.type[name] = require(path.."/"..folder.."/"..name)
+				end
+			end
+		end
+	end
+end
+
+function entity:getTypes()
+	local list = {}
+	for k, v in pairs(self.type) do
+		list[#list + 1] = k
+	end
+	return list
+end
+
 function entity:new(data, name)
 	self.type[name] = data
 end
@@ -66,12 +94,23 @@ function entity:update(dt)
 			end
 		end
 
+		---Checking if player cleared
+		if v.type == "cactus" or v.type == "mine" then
+			if not v.clear then
+				if v.x < (state:getState().player.x - v.width) then
+					v.clear = true
+					state:getState():clearEnemy(v)
+				end
+			end
+		end
+
 		--Removing obsolete entities
 		if v.obsolete then
 			if physics.world:hasItem(v) then
 				physics.world:remove(v)
 			end
-			table.remove(self.array, k)
+			--table.remove(self.array, k)
+			self.array[k] = nil
 		end
 	end
 end
